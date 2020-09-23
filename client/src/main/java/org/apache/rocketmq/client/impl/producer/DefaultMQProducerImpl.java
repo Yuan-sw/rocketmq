@@ -692,7 +692,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         TopicPublishInfo topicPublishInfo = this.topicPublishInfoTable.get(topic);
         if (null == topicPublishInfo || !topicPublishInfo.ok()) {
             this.topicPublishInfoTable.putIfAbsent(topic, new TopicPublishInfo());
-            //尝试从 NameServer 获取配置信息并更新本地缓存配置
+            //尝试从 NameServer 获取配置信息并更新本地缓存配置，这里是使用当前指定要发送的topic获取路由的
             this.mQClientFactory.updateTopicRouteInfoFromNameServer(topic);
             topicPublishInfo = this.topicPublishInfoTable.get(topic);
         }
@@ -701,7 +701,18 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             //如果当前topic有可用的路由信息，那么就正常返回
             return topicPublishInfo;
         } else {
-            //如果未找到路由信息，则再次尝试使用默认的 topic 去找路由配置信息
+            //如果未找到路由信息，则尝试使用默认的 topic 去找路由配置信息
+            //而这里使用的默认topic其实是TBW102的路由信息，这个TBW102只有当broker启动的时候，
+            // 配置信息有自动创建topic（autoCreateTopicEnable=true），才会通过心跳加载至nameServer，所以这里只有在broker开启自动创建topic的情况下才能获取到值
+            //并且，这个路由信息，获取到后，topic还是此次发送消息的topic，只是路由采用TBW102的路由来发送消息，
+            // 此时broker上其实还没有创建当前topic的路由信息，nameServer也还没有同步到当前topic的路由信息。
+            //这个时候，client会通过拿到的路由信息，选择一个messageQueue把消息发送至broker，
+            // 当目标broker收到这条消息的时候，会检查broker是否有这个toipc的路由信息，并且，会通过配置的是否自动创建topic来决定是否创建。
+            //那么，问题来了，假设TBW102对应的路由信息有两台broker，这个时候，即使这一条消息发成功了，此时也只有其中一台broker-a创建了完整的topic信息
+            //而broker-b还是没有这个topic对应的路由信息，并且，此时nameServer还未同步到任何关于这个topic的路由信息，
+            // 而client端，也就是producer本地缓存的topic路由信息对应的却是两个broker，
+            //然后broker-a端会在一个心跳包周期内，将新创建的路由信息发送到NameServer，消息发送者会每隔30s向NameServer更新路由信息，
+            // 所以此时，整个topic对应的路由信息，就只有broker-a了，该Topic的消息永远不会发送到另外一个broker-b上去了
             this.mQClientFactory.updateTopicRouteInfoFromNameServer(topic, true, this.defaultMQProducer);
             topicPublishInfo = this.topicPublishInfoTable.get(topic);
             return topicPublishInfo;
