@@ -364,10 +364,15 @@ public class RemotingCommand {
         if (SerializeType.ROCKETMQ == serializeTypeCurrentRPC) {
             return RocketMQSerializable.rocketMQProtocolEncode(this);
         } else {
+            //默认采用了json序列化。这里的this指代的是RemotingCommand
             return RemotingSerializable.encode(this);
         }
     }
 
+    /**
+     * makeCustomHeaderToNet方法是将customHeader中定义的键值对参数写入
+     * extFields中，比如我们在测试用例中，写入了requestHeader.setCount(1); requestHeader.setMessageTitle("Welcome");
+     */
     public void makeCustomHeaderToNet() {
         if (this.customHeader != null) {
             Field[] fields = getClazzFields(customHeader.getClass());

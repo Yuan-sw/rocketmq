@@ -187,6 +187,14 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
         return result;
     }
 
+    /**
+     * 顺序消息，消费消息服务提交
+     *
+     * @param msgs
+     * @param processQueue
+     * @param messageQueue
+     * @param dispathToConsume
+     */
     @Override
     public void submitConsumeRequest(
         final List<MessageExt> msgs,
@@ -404,6 +412,8 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
                 return;
             }
 
+            //一个消费者中线程池中线程的锁粒度为，MessageQueue,消费队列，也就是说RocketMQ实现顺序消费是针对MessageQueue,
+            // 也就是RocketMQ无法做到多MessageQueue的全局顺序消费，如果要使用RocketMQ做的主题的全局顺序消费，那该主题只能允许一个队列
             final Object objLock = messageQueueLock.fetchLockObject(this.messageQueue);
             synchronized (objLock) {
                 if (MessageModel.BROADCASTING.equals(ConsumeMessageOrderlyService.this.defaultMQPushConsumerImpl.messageModel())

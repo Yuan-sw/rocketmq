@@ -123,6 +123,12 @@ public class ProcessQueue {
         }
     }
 
+    /**
+     * 将消息放入消费队列中：就是将拉取的消息，放入到ProcessQueue的msgTreeMap容器中
+     *
+     * @param msgs
+     * @return
+     */
     public boolean putMessage(final List<MessageExt> msgs) {
         boolean dispatchToConsume = false;
         try {

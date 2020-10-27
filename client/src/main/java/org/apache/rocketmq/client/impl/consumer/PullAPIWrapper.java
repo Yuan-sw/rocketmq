@@ -67,6 +67,14 @@ public class PullAPIWrapper {
         this.unitMode = unitMode;
     }
 
+    /**
+     * 对PullResult进行处理
+     *
+     * @param mq
+     * @param pullResult
+     * @param subscriptionData
+     * @return
+     */
     public PullResult processPullResult(final MessageQueue mq, final PullResult pullResult,
         final SubscriptionData subscriptionData) {
         PullResultExt pullResultExt = (PullResultExt) pullResult;
@@ -74,6 +82,7 @@ public class PullAPIWrapper {
         this.updatePullFromWhichNode(mq, pullResultExt.getSuggestWhichBrokerId());
         if (PullStatus.FOUND == pullResult.getPullStatus()) {
             ByteBuffer byteBuffer = ByteBuffer.wrap(pullResultExt.getMessageBinary());
+            //1）对消息体解码成一条条消息
             List<MessageExt> msgList = MessageDecoder.decodes(byteBuffer);
 
             List<MessageExt> msgListFilterAgain = msgList;
@@ -81,6 +90,7 @@ public class PullAPIWrapper {
                 msgListFilterAgain = new ArrayList<MessageExt>(msgList.size());
                 for (MessageExt msg : msgList) {
                     if (msg.getTags() != null) {
+                        //2）执行消息过滤
                         if (subscriptionData.getTagsSet().contains(msg.getTags())) {
                             msgListFilterAgain.add(msg);
                         }
@@ -89,6 +99,7 @@ public class PullAPIWrapper {
             }
 
             if (this.hasHook()) {
+                //3）执行回调
                 FilterMessageContext filterMessageContext = new FilterMessageContext();
                 filterMessageContext.setUnitMode(unitMode);
                 filterMessageContext.setMsgList(msgListFilterAgain);
@@ -139,6 +150,27 @@ public class PullAPIWrapper {
         }
     }
 
+    /**
+     * 消息拉取的核心逻辑
+     *
+     * @param mq                         消息消费队列
+     * @param subExpression              消息订阅子模式subscribe( topicName, "模式")
+     * @param expressionType
+     * @param subVersion                 版本
+     * @param offset                     偏移量
+     * @param maxNums                    最大条数
+     * @param sysFlag                    系统标记，FLAG_COMMIT_OFFSET FLAG_SUSPEND FLAG_SUBSCRIPTION FLAG_CLASS_FILTER
+     * @param commitOffset               当前消息队列 commitlog日志中当前的最新偏移量（内存中）
+     * @param brokerSuspendMaxTimeMillis 允许的broker 暂停的时间，毫秒为单位，默认为15s
+     * @param timeoutMillis              超时时间,默认为30s
+     * @param communicationMode          消息消费模式SYNC ASYNC ONEWAY
+     * @param pullCallback               pull 回调
+     * @return
+     * @throws MQClientException
+     * @throws RemotingException
+     * @throws MQBrokerException
+     * @throws InterruptedException
+     */
     public PullResult pullKernelImpl(
         final MessageQueue mq,
         final String subExpression,
@@ -153,6 +185,7 @@ public class PullAPIWrapper {
         final CommunicationMode communicationMode,
         final PullCallback pullCallback
     ) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+        //根据MQ的Broker信息获取查找Broker信息，封装成FindBrokerResult
         FindBrokerResult findBrokerResult =
             this.mQClientFactory.findBrokerAddressInSubscribe(mq.getBrokerName(),
                 this.recalculatePullFromWhichNode(mq), false);
@@ -178,6 +211,7 @@ public class PullAPIWrapper {
                 sysFlagInner = PullSysFlag.clearCommitOffsetFlag(sysFlagInner);
             }
 
+            //然后通过网络去 拉取具体的消息，也就是消息体 中的数据
             PullMessageRequestHeader requestHeader = new PullMessageRequestHeader();
             requestHeader.setConsumerGroup(this.consumerGroup);
             requestHeader.setTopic(mq.getTopic());
