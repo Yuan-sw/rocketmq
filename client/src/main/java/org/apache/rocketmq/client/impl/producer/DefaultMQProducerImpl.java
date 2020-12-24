@@ -740,7 +740,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                                       final SendCallback sendCallback,
                                       final TopicPublishInfo topicPublishInfo,
                                       final long timeout) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
-        //此刻理解为通过Product与Broker的长连接将消息发送给Broker,然后Broker将消息存储，并返回生产者
+        //此刻理解为通过producer与Broker的长连接将消息发送给Broker,然后Broker将消息存储，并返回生产者
         long beginStartTime = System.currentTimeMillis();
         String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());
         if (null == brokerAddr) {
