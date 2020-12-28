@@ -359,13 +359,33 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     }
 
 
-
+    /**
+     * 这个方法包含了所有的发送消息、消费消息、以及路由信息刷新的网络请求。
+     * 在这个期间如果某个nameserver和broker同时宕机重启，发生了假死状况，
+     * 就可能会出现，消息发送端的broker路由信息出现连接超时，
+     * 而客户端每隔30s向NameServer查询路由信息，此时如果访问的是假死状态的nameserver，
+     * 那就会一直发生超时错误，无法更新客户端的路由信息表，只有等待nameserver和broker的机器重启完毕，
+     * 才会断开TCP连接，才能正常移除broker。
+     * 所以建议生产环境把nameserver和broker部署在不同服务器上，防止因为内存原因宕机导致nameserver假死。
+     * 当然部署在不同机器上也不保证nameserver永不假死，还可以进行源码修改，在进行链接的时候，
+     *
+     * @param addr
+     * @param request
+     * @param timeoutMillis
+     * @return
+     * @throws InterruptedException
+     * @throws RemotingConnectException
+     * @throws RemotingSendRequestException
+     * @throws RemotingTimeoutException
+     */
     @Override
     public RemotingCommand invokeSync(String addr, final RemotingCommand request, long timeoutMillis)
         throws InterruptedException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException {
         long beginStartTime = System.currentTimeMillis();
         final Channel channel = this.getAndCreateChannel(addr);
         if (channel != null && channel.isActive()) {
+            //如果发生broker机器宕机重启，在重启过程中，linux重启过程中需要自检，造成broker底层无法处理请求
+            //但是底层TCP连接并未断开，通道也是处于活跃状态的
             try {
                 doBeforeRpcHooks(addr, request);
                 long costTime = System.currentTimeMillis() - beginStartTime;
@@ -380,6 +400,8 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 this.closeChannel(addr, channel);
                 throw e;
             } catch (RemotingTimeoutException e) {
+                //如果发生RemotingTimeoutException，需要判断是不是socket连接超时，如果是socket连接超时，可能出现broker假死的状况
+                //只有在非socket连接超时的情况下才认为broker已断开连接，才会移除broker。
                 if (nettyClientConfig.isClientCloseSocketIfTimeout()) {
                     this.closeChannel(addr, channel);
                     log.warn("invokeSync: close socket because of timeout, {}ms, {}", timeoutMillis, addr);
