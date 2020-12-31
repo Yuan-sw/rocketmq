@@ -293,9 +293,9 @@ public class MQClientInstance {
                     this.mQClientAPIImpl.start();
                     // Start various schedule tasks  开启相关的定时任务
                     this.startScheduledTask();
-                    // Start pull service  开启拉取服务
+                    // Start pull service  开启拉取服务  这个拉取服务主要是拿已经构造好的请求队列中的请求，去broker获取消息
                     this.pullMessageService.start();
-                    // Start rebalance service
+                    // Start rebalance service  开启负载服务  负载服务的主要任务是针对本机所在的topic的队列进行负载均衡
                     this.rebalanceService.start();
                     // Start push service
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
@@ -1033,6 +1033,9 @@ public class MQClientInstance {
         this.rebalanceService.wakeup();
     }
 
+    /**
+     * 循环遍历每个消费组获取 MQConsumeInner 对象（其实就是 DefaultMQPushConsumerImpl 或 DefaultMQPullConsumerImpl 对象），并执行其 doRebalance 方法。
+     */
     public void doRebalance() {
         for (Map.Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
             MQConsumerInner impl = entry.getValue();
