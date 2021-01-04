@@ -360,7 +360,7 @@ public class MQClientInstance {
             }
         }, 1000, this.clientConfig.getHeartbeatBrokerInterval(), TimeUnit.MILLISECONDS);
 
-        //默认每隔5秒持久化ConsumeOffset
+        //默认消费端启动10秒后，每隔5秒持久化一次ConsumeOffset
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
