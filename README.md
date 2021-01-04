@@ -1,2 +1,2 @@
 # rocketmq
-rocketmq阅读源码相关记录
+rocketmq源码分析
