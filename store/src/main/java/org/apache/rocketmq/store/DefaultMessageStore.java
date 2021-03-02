@@ -1516,6 +1516,10 @@ public class DefaultMessageStore implements MessageStore {
             }
         }
 
+        /**
+         * 删除过期文件
+         *
+         */
         private void deleteExpiredFiles() {
             int deleteCount = 0;
             long fileReservedTime = DefaultMessageStore.this.getMessageStoreConfig().getFileReservedTime();
@@ -1540,7 +1544,7 @@ public class DefaultMessageStore implements MessageStore {
                     manualDeleteFileSeveralTimes,
                     cleanAtOnce);
 
-                fileReservedTime *= 60 * 60 * 1000;
+                fileReservedTime *= 60 * 60 * 1000;  //转换为毫秒数
 
                 deleteCount = DefaultMessageStore.this.commitLog.deleteExpiredFile(fileReservedTime, deletePhysicFilesInterval,
                     destroyMapedFileIntervalForcibly, cleanAtOnce);
@@ -1567,6 +1571,11 @@ public class DefaultMessageStore implements MessageStore {
             return CleanCommitLogService.class.getSimpleName();
         }
 
+        /**
+         * 是否到了清理文件的时间，默认是凌晨4点
+         *
+         * @return
+         */
         private boolean isTimeToDelete() {
             String when = DefaultMessageStore.this.getMessageStoreConfig().getDeleteWhen();
             if (UtilAll.isItTimeToDo(when)) {
@@ -1577,6 +1586,11 @@ public class DefaultMessageStore implements MessageStore {
             return false;
         }
 
+        /**
+         * 是否有足够的内存执行清理文件操作
+         *
+         * @return
+         */
         private boolean isSpaceToDelete() {
             double ratio = DefaultMessageStore.this.getMessageStoreConfig().getDiskMaxUsedSpaceRatio() / 100.0;
 
@@ -1793,6 +1807,9 @@ public class DefaultMessageStore implements MessageStore {
             return this.reputFromOffset < DefaultMessageStore.this.commitLog.getMaxOffset();
         }
 
+        /**
+         * 根据 comitlog offset 来将 commitlog 转发给ConsumeQueue、Index
+         */
         private void doReput() {
             for (boolean doNext = true; this.isCommitLogAvailable() && doNext; ) {
 
@@ -1801,18 +1818,21 @@ public class DefaultMessageStore implements MessageStore {
                     break;
                 }
 
+                //根据 offset 从 commitlog 找到一条消息，如果找不到，退出此次循环，doReput方法跳出。
                 SelectMappedBufferResult result = DefaultMessageStore.this.commitLog.getData(reputFromOffset);
                 if (result != null) {
                     try {
                         this.reputFromOffset = result.getStartOffset();
 
                         for (int readSize = 0; readSize < result.getSize() && doNext; ) {
+                            //尝试构建转发请求对象 DispatchRequest
                             DispatchRequest dispatchRequest =
                                 DefaultMessageStore.this.commitLog.checkMessageAndReturnSize(result.getByteBuffer(), false, false);
                             int size = dispatchRequest.getMsgSize();
 
                             if (dispatchRequest.isSuccess()) {
                                 if (size > 0) {
+                                    //转发DistpachRequest
                                     DefaultMessageStore.this.doDispatch(dispatchRequest);
 
                                     if (BrokerRole.SLAVE != DefaultMessageStore.this.getMessageStoreConfig().getBrokerRole()
@@ -1864,7 +1884,7 @@ public class DefaultMessageStore implements MessageStore {
         @Override
         public void run() {
             DefaultMessageStore.log.info(this.getServiceName() + " service started");
-
+            //线程执行，每一毫秒停顿一次
             while (!this.isStopped()) {
                 try {
                     Thread.sleep(1);

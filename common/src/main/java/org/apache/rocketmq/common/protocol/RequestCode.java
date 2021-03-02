@@ -19,8 +19,10 @@ package org.apache.rocketmq.common.protocol;
 
 public class RequestCode {
 
+    //发送消息网络通信，请求code
     public static final int SEND_MESSAGE = 10;
 
+    //消费消息网络通信，请求code
     public static final int PULL_MESSAGE = 11;
 
     public static final int QUERY_MESSAGE = 12;
@@ -79,6 +81,7 @@ public class RequestCode {
     public static final int REGISTER_BROKER = 103;
 
     public static final int UNREGISTER_BROKER = 104;
+    //根据topic名称去nameserver获取路由信息的网络请求code码
     public static final int GET_ROUTEINTO_BY_TOPIC = 105;
 
     public static final int GET_BROKER_CLUSTER_INFO = 106;

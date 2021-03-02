@@ -766,6 +766,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     msgBodyCompressed = true;
                 }
 
+                //事务消息的消息内容中携带了TRAN_MSG属性，值为true
                 final String tranMsg = msg.getProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED);
                 if (tranMsg != null && Boolean.parseBoolean(tranMsg)) {
                     sysFlag |= MessageSysFlag.TRANSACTION_PREPARED_TYPE;
@@ -794,6 +795,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     context.setMq(mq);
                     String isTrans = msg.getProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED);
                     if (isTrans != null && isTrans.equals("true")) {
+                        //设置事务消息的消息类型为half半消息
                         context.setMsgType(MessageType.Trans_Msg_Half);
                     }
 
@@ -1209,6 +1211,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         if (null == localTransactionExecuter && null == transactionListener) {
             throw new MQClientException("tranExecutor is null", null);
         }
+        //消息检查
         Validators.checkMessage(msg, this.defaultMQProducer);
 
         SendResult sendResult = null;

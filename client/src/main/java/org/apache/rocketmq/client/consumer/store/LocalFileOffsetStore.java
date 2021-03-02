@@ -72,6 +72,7 @@ public class LocalFileOffsetStore implements OffsetStore {
 
     @Override
     public void load() throws MQClientException {
+        //主要就是读取 offsets.json 或 offsets.json.bak 中的内容，然后将json转换成map
         OffsetSerializeWrapper offsetSerializeWrapper = this.readLocalOffset();
         if (offsetSerializeWrapper != null && offsetSerializeWrapper.getOffsetTable() != null) {
             offsetTable.putAll(offsetSerializeWrapper.getOffsetTable());
@@ -141,7 +142,7 @@ public class LocalFileOffsetStore implements OffsetStore {
     }
 
     /**
-     * 初次保存offsets.json文件
+     * 将所有队列消费进度刷入offsets.json文件
      *
      * @param mqs
      */

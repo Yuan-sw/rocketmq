@@ -93,24 +93,24 @@ public class MessageStoreConfig {
      */
     // ConsumeQueue flush interval
     private int flushIntervalConsumeQueue = 1000;
-    // Resource reclaim interval
+    // Resource reclaim interval  资源回收间隔时间
     private int cleanResourceInterval = 10000;
-    // CommitLog removal interval
+    // CommitLog removal interval  CommitLog删除间隔时间
     private int deleteCommitLogFilesInterval = 100;
-    // ConsumeQueue removal interval
+    // ConsumeQueue removal interval 用户队列删除间隔时间
     private int deleteConsumeQueueFilesInterval = 100;
     private int destroyMapedFileIntervalForcibly = 1000 * 120;
     private int redeleteHangedFileInterval = 1000 * 120;
-    // When to delete,default is at 4 am
+    // When to delete,default is at 4 am  默认每天凌晨4点执行删除计划
     @ImportantField
     private String deleteWhen = "04";
     private int diskMaxUsedSpaceRatio = 75;
-    // The number of hours to keep a log file before deleting it (in hours)
+    // The number of hours to keep a log file before deleting it (in hours)  删除日志文件之前保留日志文件的小时数（小时）
     @ImportantField
     private int fileReservedTime = 72;
-    // Flow control for ConsumeQueue
+    // Flow control for ConsumeQueue  消费队列的流控制
     private int putMsgIndexHightWater = 600000;
-    // The maximum size of a single log file,default is 512K
+    // The maximum size of a single log file,default is 512K 单个日志文件的最大大小，默认值为512K
     private int maxMessageSize = 1024 * 1024 * 4;
     // Whether check the CRC32 of the records consumed.
     // This ensures no on-the-wire or on-disk corruption to the messages occurred.

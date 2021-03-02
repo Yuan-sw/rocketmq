@@ -412,6 +412,12 @@ public class RouteInfoManager {
         }
     }
 
+    /**
+     * 根据topic获取路由信息，包含了队列和broker相关信息
+     *
+     * @param topic
+     * @return
+     */
     public TopicRouteData pickupTopicRouteData(final String topic) {
         TopicRouteData topicRouteData = new TopicRouteData();
         boolean foundQueueData = false;
@@ -425,6 +431,8 @@ public class RouteInfoManager {
 
         try {
             try {
+                //使用全局读锁，这个全局只存在于单个nameserver节点内，保证多个线程在同时获取同一topic的路由信息时，HashMap的线程安全
+                //broker对应的队列，路由信息存储的时候都是放在一个hashmap中
                 this.lock.readLock().lockInterruptibly();
                 List<QueueData> queueDataList = this.topicQueueTable.get(topic);
                 if (queueDataList != null) {
