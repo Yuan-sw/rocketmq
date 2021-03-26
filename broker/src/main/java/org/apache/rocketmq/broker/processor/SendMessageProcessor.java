@@ -350,16 +350,21 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
         msgInner.setStoreHost(this.getStoreHost());
         msgInner.setReconsumeTimes(requestHeader.getReconsumeTimes() == null ? 0 : requestHeader.getReconsumeTimes());
         PutMessageResult putMessageResult = null;
+        //把接受到的请求头中的properties值转换为hash结构
         Map<String, String> oriProps = MessageDecoder.string2messageProperties(requestHeader.getProperties());
         String traFlag = oriProps.get(MessageConst.PROPERTY_TRANSACTION_PREPARED);
         if (traFlag != null && Boolean.parseBoolean(traFlag)) {
+            //事务消息的消息内容中携带了TRAN_MSG属性，值为true
             if (this.brokerController.getBrokerConfig().isRejectTransactionMessage()) {
+                //如果broker设置的是拒绝接收事务消息，则直接返回无权限给客户端
                 response.setCode(ResponseCode.NO_PERMISSION);
                 response.setRemark(
                         "the broker[" + this.brokerController.getBrokerConfig().getBrokerIP1()
                                 + "] sending transaction message is forbidden");
                 return response;
             }
+            //启动broker的时候，构造TransactionalMessageService的时候，使用的是org.apache.rocketmq.broker.transaction.queue这个包下面的实现类
+            //如果是单元测试，构造的时候用的是test文件夹下org.apache.rocketmq.broker.util包下的实现类
             putMessageResult = this.brokerController.getTransactionalMessageService().prepareMessage(msgInner);
         } else {
             putMessageResult = this.brokerController.getMessageStore().putMessage(msgInner);

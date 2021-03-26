@@ -814,7 +814,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 requestHeader.setSysFlag(sysFlag);
                 requestHeader.setBornTimestamp(System.currentTimeMillis());
                 requestHeader.setFlag(msg.getFlag());
-                requestHeader.setProperties(MessageDecoder.messageProperties2String(msg.getProperties()));
+                requestHeader.setProperties(MessageDecoder.messageProperties2String(msg.getProperties())); //将消息中的属性值全部set到请求头中，发送至broker
                 requestHeader.setReconsumeTimes(0);
                 requestHeader.setUnitMode(this.isUnitMode());
                 requestHeader.setBatch(msg instanceof MessageBatch);
