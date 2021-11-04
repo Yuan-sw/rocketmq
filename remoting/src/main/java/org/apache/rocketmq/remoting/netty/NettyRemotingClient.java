@@ -367,7 +367,8 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
      * 那就会一直发生超时错误，无法更新客户端的路由信息表，只有等待nameserver和broker的机器重启完毕，
      * 才会断开TCP连接，才能正常移除broker。
      * 所以建议生产环境把nameserver和broker部署在不同服务器上，防止因为内存原因宕机导致nameserver假死。
-     * 当然部署在不同机器上也不保证nameserver永不假死，还可以进行源码修改，在进行链接的时候，
+     * 当然部署在不同机器上也不保证nameserver永不假死，还可以进行源码修改，在进行链接的时候，nameserver与客户端的连接，
+     * 应该在超时后，关闭连接，触发nameserver漂移
      *
      * @param addr
      * @param request
@@ -402,6 +403,8 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
             } catch (RemotingTimeoutException e) {
                 //如果发生RemotingTimeoutException，需要判断是不是socket连接超时，如果是socket连接超时，可能出现broker假死的状况
                 //只有在非socket连接超时的情况下才认为broker已断开连接，才会移除broker。
+
+                //如果要在客户端向nameserver通信的时候发生超时状况，就触发nameserver飘逸，需要修改源码，把clientCloseSocketIfTimeout改为true即可
                 if (nettyClientConfig.isClientCloseSocketIfTimeout()) {
                     this.closeChannel(addr, channel);
                     log.warn("invokeSync: close socket because of timeout, {}ms, {}", timeoutMillis, addr);
