@@ -928,6 +928,13 @@ public class MQClientInstance {
         }
     }
 
+    /**
+     * 消费者start()的时候，会调用该方法，把消费者对应的信息，注册到consumerTable中
+     *
+     * @param group
+     * @param consumer
+     * @return
+     */
     public boolean registerConsumer(final String group, final MQConsumerInner consumer) {
         if (null == group || null == consumer) {
             return false;
@@ -1035,6 +1042,9 @@ public class MQClientInstance {
 
     /**
      * 循环遍历每个消费组获取 MQConsumeInner 对象（其实就是 DefaultMQPushConsumerImpl 或 DefaultMQPullConsumerImpl 对象），并执行其 doRebalance 方法。
+     * 当生产者客户端启动的时候，consumerTable中是没有消费者的，所以这个doRebalance相当于没有执行，
+     * 当消费者客户端启动的时候，会调用MQClentInstance#registerConsumer()方法，把消费者信息添加到consumerTable中
+     * 再去通过不同消费者模式实现的doRebalance方法，进行消息获取
      */
     public void doRebalance() {
         for (Map.Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
